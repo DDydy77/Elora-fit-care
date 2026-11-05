@@ -5,7 +5,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 async function run() {
   const instruction = process.env.ISSUE_BODY;
-  const fileName = 'Elora Fit Care.html'; // Le nom exact de ton fichier
+  const fileName = 'Elora Fit Care.html';
   const fileContent = fs.readFileSync(fileName, 'utf8');
 
   const prompt = `
@@ -17,8 +17,9 @@ async function run() {
   Renvoie UNIQUEMENT le code complet et corrigé, sans explications ni markdown autour.
   `;
 
+  // Utilisation du modèle officiel valide
   const response = await ai.models.generateContent({
-    model: 'gemini-1.5-pro-latest',
+    model: 'gemini-2.5-flash',
     contents: prompt,
   });
 
@@ -26,4 +27,5 @@ async function run() {
   fs.writeFileSync(fileName, newCode, 'utf8');
   console.log("Fichier mis à jour avec succès !");
 }
-run();
+
+run().catch(console.error);
