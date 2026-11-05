@@ -9,21 +9,25 @@ async function run() {
   const fileContent = fs.readFileSync(fileName, 'utf8');
 
   const prompt = `
-  Voici le code actuel de mon fichier HTML :
+  Voici le code actuel du fichier HTML (${fileName}) :
   \`\`\`html
   ${fileContent}
   \`\`\`
-  L'utilisateur a demandé cette modification : "${instruction}"
-  Renvoie UNIQUEMENT le code complet et corrigé, sans explications ni markdown autour.
+
+  Demande de modification : "${instruction}"
+
+  Consignes strictes :
+  1. Applique la modification demandée directement dans le code HTML.
+  2. Renvoie l'INTÉGRALITÉ du code HTML corrigé.
+  3. Ne mets aucun texte explicatif avant ou après le code.
   `;
 
-  // Utilisation du modèle officiel valide
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
     contents: prompt,
   });
 
-  let newCode = response.text.replace(/```html/g, '').replace(/```/g, '').trim();
+  let newCode = response.text.replace(/^```html\s*/i, '').replace(/```\s*$/i, '').trim();
   fs.writeFileSync(fileName, newCode, 'utf8');
   console.log("Fichier mis à jour avec succès !");
 }
