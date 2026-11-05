@@ -30,5 +30,4 @@ jobs:
           git config --global user.name "Gemini Auto-Codeur"
           git config --global user.email "ia@gemini.com"
           git add "Elora Fit Care.html"
-          git commit -m "Mise à jour par l'IA"
-          git push
+          git diff --staged --quiet || (git commit -m "Mise à jour par l'IA" && git push)
