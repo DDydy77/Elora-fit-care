@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Elora Fit Care</title>
+<style>
+:root{--bg:#f8f5fa;--card:#fff;--tx:#1e1b2e;--mu:#6b6580;--ac:#d6336c;--ac2:#7c3aed;--bd:#e5dff0;--ok:#16a34a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f172a;--card:#1e293b;--tx:#f1f5f9;--mu:#94a3b8;--ac:#f472b6;--ac2:#c084fc;--bd:#334155;--ok:#34d399}}
+:root[data-theme="dark"]{--bg:#0f172a;--card:#1e293b;--tx:#f1f5f9;--mu:#94a3b8;--ac:#f472b6;--ac2:#c084fc;--bd:#334155;--ok:#34d399}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,sans-serif;padding-bottom:76px}
+main{max-width:480px;margin:0 auto;padding:14px}
+h1{font-size:20px;margin:0 0 10px}h2{font-size:16px;margin:0 0 8px}
+.c{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:10px}
+.mu{color:var(--mu);font-size:13px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sp{justify-content:space-between}
+button,select,input{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:8px 10px;min-height:40px}
+input{width:100%}button{cursor:pointer}
+.p{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:600}.on{border-color:var(--ac);color:var(--ac);font-weight:600}
+.g7{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.g7 button{padding:6px 0;font-size:12px;line-height:1.25;min-height:54px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.bar{height:8px;background:var(--bd);border-radius:5px;overflow:hidden;margin:4px 0 8px}.bar i{display:block;height:100%;background:var(--ac2)}
+.set{display:flex;gap:8px;align-items:center;margin-top:6px}.set input{width:80px}.ck{width:44px}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--bd);display:grid;grid-template-columns:repeat(7,1fr);padding:4px 2px calc(4px + env(safe-area-inset-bottom,0px))}
+nav button{border:0;background:none;font-size:12px;padding:10px 0}nav .on{background:none}
+pre{white-space:pre-wrap;font:13px/1.45 ui-monospace,monospace;margin:0}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:90px;background:var(--tx);color:var(--bg);padding:8px 14px;border-radius:10px;display:none;z-index:9}
+label{font-size:12px;color:var(--mu);display:block}
+</style></head><body>
+<main id="m"></main><nav id="n"></nav><div id="toast"></div>
+<script>
+const pad=n=>String(n).padStart(2,"0");
+const ds=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const parse=s=>{const[a,b,c]=s.split("-").map(Number);return new Date(a,b-1,c)};
+const add=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const monday=d=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const KEY="elora_v3",TODAY=ds(new Date());
+const def={nights:[],period:"",cycleLen:28,days:{},sets:{},done:{},meas:[],tg:{k:1850,p:95,c:210,f:60},nom:"Elora"};
+let S;try{S={...def,...JSON.parse(localStorage.getItem(KEY)||"{}")}}catch(e){S={...def}}
+let tab="plan",sel=TODAY,tmr=null,left=0;
+const toast=t=>{const e=document.getElementById("toast");e.textContent=t;e.style.display="block";setTimeout(()=>e.style.display="none",2500)};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast("Sauvegarde impossible : stockage plein")}};
+const day=k=>S.days[k]||(S.days[k]={water:0,steps:0,sleep:7,feel:"moyen",meals:[]});
+const W={
+quads:{t:"Jambes · Quadriceps",ex:[["Presse à cuisses",4,"10-12"],["Hip thrust",4,"8-10"],["Fentes marchées",3,"10/jambe"],["Leg extension",3,"12-15"]]},
+dos:{t:"Dos & Posture",ex:[["Tirage vertical",4,"10-12"],["Rowing assis",3,"12"],["Face pull",3,"15"],["Planche",3,"30-45 s",1]]},
+isch:{t:"Jambes · Ischios & Fessiers",ex:[["Soulevé de terre roumain",4,"8-10"],["Hip thrust",4,"8-10"],["Leg curl",3,"12"],["Abduction machine",3,"15"]]},
+pecs:{t:"Pecs & Épaules",ex:[["Développé machine",4,"10"],["Élévations latérales",3,"12-15"],["Développé épaules haltères",3,"10"],["Triceps poulie",3,"12"]]},
+cardio:{t:"Cardio doux",ex:[["Marche inclinée 10-12 %",1,"30 min",1],["Étirements",1,"10 min",1]]},
+recup:{t:"Récupération (sommeil insuffisant)",ex:[["Marche tranquille",1,"20 min",1],["Mobilité & étirements",1,"15 min",1]]}};
+const ORDER=["quads","dos","isch","pecs","cardio"];
+function sched(k){const m=monday(parse(k));let i=0,o={};for(let n=0;n<7;n++){const d=ds(add(m,n));
+ if(S.nights.includes(d))o[d]={r:1,l:"🌙 Garde de nuit · repos"};
+ else if(i<5){o[d]={w:ORDER[i],l:W[ORDER[i]].t};i++}
+ else o[d]={w:"cardio",l:"Récupération active"}}return o}
+function cyc(){if(!S.period)return null;const diff=Math.round((parse(TODAY)-parse(S.period))/864e5);if(diff<0)return null;
+ const L=+S.cycleLen||28,d=diff%L+1,o=L-14;
+ if(d<=5)return{d,L,n:"Menstruelle",e:"Énergie souvent plus basse",a:"Réduis un peu les charges si besoin, privilégie la mobilité, aliments riches en fer et magnésium."};
+ if(d<o-1)return{d,L,n:"Folliculaire",e:"Énergie souvent en hausse",a:"Bon moment pour progresser en charge si tu te sens bien."};
+ if(d<=o+1)return{d,L,n:"Ovulatoire",e:"Pic d’énergie possible",a:"Soigne l’échauffement : les articulations sont souvent plus souples."};
+ return{d,L,n:"Lutéale",e:"Fatigue et appétit parfois plus marqués",a:"Garde tes acquis. La balance peut gagner 1-2 kg d’eau : ce n’est pas du gras."}}
+const tot=d=>d.meals.reduce((a,x)=>({k:a.k+x.k,p:a.p+x.p,c:a.c+x.c,f:a.f+x.f}),{k:0,p:0,c:0,f:0});
+const bar=(v,mx)=>`<div class="bar"><i style="width:${Math.min(100,mx?v/mx*100:0)}%"></i></div>`;
+const fr=k=>parse(k).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"});
+function beep(){try{const a=new AudioContext(),o=a.createOscillator();o.connect(a.destination);o.frequency.value=880;o.start();o.stop(a.currentTime+.4)}catch(e){}}
+function tick(){const e=document.getElementById("tm");if(e)e.textContent=left>0?pad(Math.floor(left/60))+":"+pad(left%60):"Prêt"}
+function startT(s){clearInterval(tmr);left=s;tick();tmr=setInterval(()=>{left--;tick();if(left<=0){clearInterval(tmr);beep()}},1000)}
+
+function vPlan(){const sc=sched(sel),m=monday(parse(sel)),cur=sc[sel];
+ let h=`<div class="c"><div class="row sp"><button data-a="wk" data-v="-1">←</button><b>Semaine du ${fr(ds(m))}</b><button data-a="wk" data-v="1">→</button></div><div class="g7" style="margin-top:8px">`;
+ for(let n=0;n<7;n++){const k=ds(add(m,n)),s=sc[k];h+=`<button data-a="sel" data-v="${k}" class="${k===sel?"on":""}">${parse(k).toLocaleDateString("fr-FR",{weekday:"narrow"})}<br><b>${parse(k).getDate()}</b><br>${s.r?"🌙":S.done[k]?"✅":k===TODAY?"•":""}</button>`}
+ h+=`</div></div><div class="c"><h2>${fr(sel)}</h2><p>${cur.l}</p><div class="row"><button data-a="night">${S.nights.includes(sel)?"Retirer la garde":"Marquer garde de nuit"}</button>${cur.r?"":`<button class="p" data-a="tab" data-v="seance">Voir la séance</button>`}</div></div>
+ <p class="mu">Les séances se répartissent sur 5 jours par semaine (lundi → dimanche) et sautent les nuits de garde.</p>`;return h}
+
+function vSeance(){const cur=sched(sel)[sel],d=day(sel);
+ if(cur.r)return`<div class="c"><h2>${fr(sel)}</h2><p>🌙 Jour de garde : repos. Hydrate-toi et dors.</p></div>`;
+ const tired=d.sleep<5||d.feel==="epuisee",wo=W[tired?"recup":cur.w];
+ let h=`<div class="c"><h2>${wo.t}</h2><p class="mu">${fr(sel)}${tired?" · séance allégée : sommeil insuffisant (< 5 h) ou épuisement.":""}</p></div>
+ <div class="c row sp"><b id="tm">Prêt</b><span class="row"><button data-a="tm" data-v="60">60 s</button><button data-a="tm" data-v="90">90 s</button><button data-a="tm" data-v="120">2 min</button></span></div>`;
+ wo.ex.forEach((x,i)=>{h+=`<div class="c"><b>${x[0]}</b> <span class="mu">${x[1]} × ${x[2]}</span>`;
+  for(let s=0;s<x[1];s++){const k=`${sel}|${i}|${s}`,v=S.sets[k]||{};
+   h+=`<div class="set"><span class="mu">Série ${s+1}</span>${x[3]?"":`<input type="number" inputmode="decimal" min="0" placeholder="kg" value="${v.w??""}" data-b="w" data-v="${k}">`}<button class="ck ${v.ok?"on":""}" data-a="chk" data-v="${k}">${v.ok?"✓":"○"}</button></div>`}
+  h+="</div>"});
+ return h+`<button class="p" style="width:100%" data-a="done">${S.done[sel]?"Séance validée ✅ (annuler)":"Valider la séance"}</button>`}
+
+function vCycle(){const c=cyc();
+ let h=`<div class="c"><h2>Cycle</h2><div class="g2"><div><label>Début des dernières règles</label><input type="date" value="${S.period}" data-b="period"></div><div><label>Durée du cycle (jours)</label><input type="number" min="21" max="45" value="${S.cycleLen}" data-b="cycleLen"></div></div></div>`;
+ if(!c)return h+`<p class="mu">Renseigne la date de début de tes dernières règles pour voir ta phase.</p>`;
+ return h+`<div class="c"><h2>Jour ${c.d}/${c.L} · phase ${c.n}</h2>${bar(c.d,c.L)}<p>${c.e}.</p><p>${c.a}</p></div><p class="mu">Ce sont des tendances générales : l’effet varie beaucoup d’une personne à l’autre. Ce n’est pas un avis médical.</p>`}
+
+function vNutri(){const d=day(sel),t=tot(d),g=S.tg;
+ let h=`<div class="c"><h2>${fr(sel)}</h2>`;
+ [["Calories",t.k,g.k,"kcal"],["Protéines",t.p,g.p,"g"],["Glucides",t.c,g.c,"g"],["Lipides",t.f,g.f,"g"]].forEach(r=>h+=`<div class="row sp"><span>${r[0]}</span><span class="mu">${Math.round(r[1])} / ${r[2]} ${r[3]}</span></div>${bar(r[1],r[2])}`);
+ h+=`<div class="row"><button data-a="pre" data-v="1850,95,210,60">Maintien</button><button data-a="pre" data-v="2000,105,225,65">Recomposition</button></div></div>
+ <div class="c"><h2>Ajouter un repas</h2><div class="g2"><select id="mcat"><option>Petit-déjeuner</option><option>Déjeuner</option><option>Dîner</option><option>Collation</option></select><input id="mn" placeholder="Nom du repas"></div>
+ <div class="g2" style="margin-top:8px"><input id="mk" type="number" placeholder="kcal"><input id="mp" type="number" placeholder="Prot. (g)"><input id="mc" type="number" placeholder="Gluc. (g)"><input id="mf" type="number" placeholder="Lip. (g)"></div><button class="p" style="width:100%;margin-top:8px" data-a="meal">Ajouter</button></div>`;
+ d.meals.forEach(x=>h+=`<div class="c row sp"><span><b>${esc(x.n)}</b><br><span class="mu">${esc(x.cat)} · ${x.k} kcal · P${x.p} G${x.c} L${x.f}</span></span><button data-a="delmeal" data-v="${x.id}">✕</button></div>`);
+ return h}
+
+function vSante(){const d=day(sel);
+ return`<div class="c"><h2>Hydratation · ${fr(sel)}</h2><p><b>${(d.water/1000).toFixed(2)} L</b> <span class="mu">/ 2,2 L</span></p>${bar(d.water,2200)}<div class="row"><button data-a="water" data-v="250">+250 ml</button><button data-a="water" data-v="500">+500 ml</button><button data-a="water" data-v="-250">−250</button></div></div>
+ <div class="c g2"><div><label>Pas</label><input type="number" min="0" value="${d.steps}" data-b="steps"></div><div><label>Sommeil (h)</label><input type="number" min="0" max="24" step="0.5" value="${d.sleep}" data-b="sleep"></div></div>
+ <div class="c"><label>Ressenti au réveil</label><select data-b="feel" style="width:100%"><option value="en_forme" ${d.feel==="en_forme"?"selected":""}>😊 En forme</option><option value="moyen" ${d.feel==="moyen"?"selected":""}>😐 Moyen</option><option value="epuisee" ${d.feel==="epuisee"?"selected":""}>😴 Épuisée</option></select></div>`}
+
+function vCorps(){const f=S.meas[S.meas.length-1],l=S.meas[0];
+ let h=`<div class="c"><h2>Nouvelle mesure</h2><div class="g3"><div><label>Poids (kg)</label><input id="m_w" type="number" step="0.1"></div><div><label>Taille (cm)</label><input id="m_t" type="number"></div><div><label>Hanches</label><input id="m_h" type="number"></div><div><label>Cuisses</label><input id="m_c" type="number"></div><div><label>Bras</label><input id="m_b" type="number"></div></div><button class="p" style="width:100%;margin-top:8px" data-a="meas">Enregistrer</button></div>`;
+ if(!l)return h+`<p class="mu">Aucune mesure pour l’instant.</p>`;
+ const dl=(a,b)=>{const x=+(a-b).toFixed(1);return(x>0?"+":"")+x};
+ h+=`<div class="c"><b>Depuis le début</b> <span class="mu">(${fr(f.date)} → ${fr(l.date)})</span><p>Poids ${dl(l.w,f.w)} kg · Taille ${dl(l.t,f.t)} cm · Hanches ${dl(l.h,f.h)} cm · Cuisses ${dl(l.c,f.c)} cm · Bras ${dl(l.b,f.b)} cm</p></div>`;
+ return h+S.meas.map(x=>`<div class="c row sp"><span>${fr(x.date)}<br><span class="mu">T ${x.t} · H ${x.h} · Cu ${x.c} · Br ${x.b}</span></span><b>${x.w} kg</b></div>`).join("")}
+
+function report(){const m=monday(parse(sel)),ks=[...Array(7)].map((_,i)=>ds(add(m,i))),lg=ks.filter(k=>S.days[k]);
+ const avg=f=>lg.length?Math.round(lg.reduce((a,k)=>a+f(S.days[k]),0)/lg.length):0,c=cyc();
+ return`✨ BILAN DE LA SEMAINE – ${S.nom||"Elora"} ✨\n📅 Semaine du ${fr(ds(m))}\n`+(c?`🌸 Cycle : jour ${c.d}, phase ${c.n}\n`:"")+
+ `🌙 Gardes de nuit : ${ks.filter(k=>S.nights.includes(k)).length}\n🏋️‍♀️ Séances validées : ${ks.filter(k=>S.done[k]).length}\n👟 Pas / jour (moy.) : ${avg(d=>d.steps).toLocaleString("fr-FR")}\n🥗 Calories / jour (moy.) : ${avg(d=>tot(d).k)} kcal (objectif ${S.tg.k})\n💧 Eau / jour (moy.) : ${(avg(d=>d.water)/1000).toFixed(1)} L\n😴 Sommeil (moy.) : ${avg(d=>d.sleep)} h`+(S.meas.length?`\n⚖️ Dernier poids : ${S.meas[0].w} kg`:"")}
+function vBilan(){return`<div class="c"><label>Prénom</label><input value="${esc(S.nom)}" data-b="nom"></div><div class="c"><pre>${esc(report())}</pre></div><button class="p" style="width:100%" data-a="copy">Copier le bilan</button>`}
+
+const V={plan:vPlan,seance:vSeance,cycle:vCycle,nutri:vNutri,sante:vSante,corps:vCorps,bilan:vBilan};
+const TABS=[["plan","Plan"],["seance","Séance"],["cycle","Cycle"],["nutri","Repas"],["sante","Santé"],["corps","Corps"],["bilan","Bilan"]];
+function render(){document.getElementById("m").innerHTML=`<h1>Elora Fit Care</h1>`+(["seance","nutri","sante"].includes(tab)?`<div class="row sp c"><button data-a="day" data-v="-1">←</button><b>${fr(sel)}</b><button data-a="day" data-v="1">→</button></div>`:"")+V[tab]();
+ document.getElementById("n").innerHTML=TABS.map(t=>`<button data-a="tab" data-v="${t[0]}" class="${t[0]===tab?"on":""}">${t[1]}</button>`).join("");tick()}
+
+document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t)return;const a=t.dataset.a,v=t.dataset.v;
+ if(a==="tab")tab=v;
+ else if(a==="sel")sel=v;
+ else if(a==="wk")sel=ds(add(parse(sel),7*v));
+ else if(a==="day")sel=ds(add(parse(sel),+v));
+ else if(a==="night"){const i=S.nights.indexOf(sel);i>=0?S.nights.splice(i,1):S.nights.push(sel)}
+ else if(a==="done")S.done[sel]=!S.done[sel];
+ else if(a==="chk"){S.sets[v]={...S.sets[v],ok:!(S.sets[v]||{}).ok}}
+ else if(a==="tm"){startT(+v);return}
+ else if(a==="water"){const d=day(sel);d.water=Math.max(0,Math.min(5000,d.water+ +v))}
+ else if(a==="pre"){const p=v.split(",").map(Number);S.tg={k:p[0],p:p[1],c:p[2],f:p[3]}}
+ else if(a==="delmeal"){const d=day(sel);d.meals=d.meals.filter(x=>x.id!=v)}
+ else if(a==="meal"){const g=i=>document.getElementById(i).value,n=g("mn").trim();if(!n){toast("Donne un nom au repas");return}
+  day(sel).meals.push({id:Date.now(),cat:g("mcat"),n,k:+g("mk")||0,p:+g("mp")||0,c:+g("mc")||0,f:+g("mf")||0})}
+ else if(a==="meas"){const g=i=>parseFloat(document.getElementById(i).value),p=S.meas[0]||{};if(!g("m_w")){toast("Le poids est obligatoire");return}
+  S.meas.unshift({date:TODAY,w:g("m_w"),t:g("m_t")||p.t||0,h:g("m_h")||p.h||0,c:g("m_c")||p.c||0,b:g("m_b")||p.b||0})}
+ else if(a==="copy"){const x=report();(navigator.clipboard?navigator.clipboard.writeText(x):Promise.reject()).then(()=>toast("Bilan copié")).catch(()=>toast("Copie impossible : sélectionne le texte à la main"));return}
+ save();render()});
+document.addEventListener("change",e=>{const t=e.target.closest("[data-b]");if(!t)return;const b=t.dataset.b,v=t.value;
+ if(b==="w"){S.sets[t.dataset.v]={...S.sets[t.dataset.v],w:v===""?"":Math.max(0,+v)}}
+ else if(b==="period")S.period=v;
+ else if(b==="cycleLen")S.cycleLen=Math.max(21,Math.min(45,+v||28));
+ else if(b==="nom")S.nom=v;
+ else if(b==="steps")day(sel).steps=Math.max(0,+v||0);
+ else if(b==="sleep")day(sel).sleep=Math.max(0,Math.min(24,+v||0));
+ else if(b==="feel")day(sel).feel=v;
+ save();render()});
+render();
+</script></body></html>
