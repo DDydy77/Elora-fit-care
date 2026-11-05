@@ -5,7 +5,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 async function run() {
   const instruction = process.env.ISSUE_BODY;
-  const fileName = 'Elora Fit Care.html';
+  const fileName = 'Index.html';
   const fileContent = fs.readFileSync(fileName, 'utf8');
 
   const prompt = `
