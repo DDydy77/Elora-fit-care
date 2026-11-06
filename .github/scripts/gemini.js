@@ -18,7 +18,7 @@ async function run() {
 
   Consignes strictes :
   1. Applique la modification demandée directement dans le code HTML.
-  2. Renvoie l'INTÉGRALITÉ du code HTML corrigé.
+  2. Renvoie l'INTÉGRALITÉ du code HTML corrigé (avec un design lumineux, les animations, etc.).
   3. Ne mets aucun texte explicatif avant ou après le code.
   `;
 
@@ -29,7 +29,7 @@ async function run() {
 
   let newCode = response.text.replace(/^```html\s*/i, '').replace(/```\s*$/i, '').trim();
   fs.writeFileSync(fileName, newCode, 'utf8');
-  console.log("Fichier mis à jour avec succès !");
+  console.log("Fichier mis à jour localement par l'IA !");
 }
 
 run().catch(console.error);
